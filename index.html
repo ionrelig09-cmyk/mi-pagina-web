@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCANNER // Lector de codigos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e0b;
+    --panel: #10160f;
+    --line: #1f2b20;
+    --phosphor: #4dff88;
+    --phosphor-dim: #276b45;
+    --amber: #ffb000;
+    --text: #cfe8d6;
+    --text-dim: #6b8f74;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px),
+      radial-gradient(ellipse at center, #0d1410 0%, var(--bg) 70%);
+    color:var(--text);
+    font-family:'VT323', monospace;
+    display:flex;
+    justify-content:center;
+    padding:24px 16px 60px;
+  }
+
+  .wrap{ width:100%; max-width:560px; }
+
+  header{ text-align:center; margin-bottom:22px; }
+
+  .title{
+    font-family:'Press Start 2P', monospace;
+    font-size:16px;
+    letter-spacing:2px;
+    color:var(--phosphor);
+    text-shadow: 0 0 6px rgba(77,255,136,0.55);
+    margin:0 0 10px;
+  }
+
+  .subtitle{
+    font-size:20px;
+    color:var(--text-dim);
+    letter-spacing:1px;
+  }
+
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin:16px 0;
+    position:relative;
+  }
+  .divider::after{
+    content:"";
+    position:absolute; left:0; top:0;
+    height:1px; width:40px;
+    background:var(--phosphor);
+    box-shadow:0 0 6px var(--phosphor);
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:14px;
+    position:relative;
+  }
+
+  /* --- Viewport de camara con reticula de escaner (elemento firma) --- */
+  .viewport{
+    position:relative;
+    width:100%;
+    aspect-ratio: 4 / 3;
+    background:#000;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+
+  video{
+    width:100%; height:100%;
+    object-fit:cover;
+    filter:grayscale(15%) contrast(1.05);
+  }
+
+  .placeholder{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-dim);
+    font-size:20px;
+    text-align:center;
+    padding:20px;
+  }
+
+  .scanline{
+    position:absolute; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--phosphor), transparent);
+    box-shadow:0 0 8px 1px var(--phosphor);
+    animation: sweep 2.4s linear infinite;
+    opacity:0.85;
+  }
+  @keyframes sweep{
+    0%{ top:6%; }
+    50%{ top:94%; }
+    100%{ top:6%; }
+  }
+
+  .corner{
+    position:absolute; width:22px; height:22px;
+    border-color: var(--phosphor-dim);
+    border-style:solid;
+    transition: border-color .15s, filter .15s;
+  }
+  .corner.tl{ top:8px; left:8px; border-width:3px 0 0 3px; }
+  .corner.tr{ top:8px; right:8px; border-width:3px 3px 0 0; }
+  .corner.bl{ bottom:8px; left:8px; border-width:0 0 3px 3px; }
+  .corner.br{ bottom:8px; right:8px; border-width:0 3px 3px 0; }
+
+  .viewport.hit .corner{
+    border-color: var(--amber);
+    filter: drop-shadow(0 0 6px var(--amber));
+  }
+
+  .controls{
+    display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
+  }
+
+  button{
+    flex:1;
+    min-width:140px;
+    font-family:'Press Start 2P', monospace;
+    font-size:11px;
+    background:var(--panel);
+    color:var(--phosphor);
+    border:1px solid var(--phosphor-dim);
+    padding:12px 10px;
+    cursor:pointer;
+    letter-spacing:1px;
+  }
+  button:hover{ border-color:var(--phosphor); box-shadow:0 0 8px rgba(77,255,136,0.35); }
+  button:disabled{ color:var(--text-dim); border-color:var(--line); cursor:not-allowed; box-shadow:none; }
+
+  .status{
+    margin-top:12px;
+    font-size:20px;
+    color:var(--text-dim);
+    display:flex; align-items:center; gap:8px;
+  }
+  .status .dot{
+    width:9px; height:9px; background:var(--text-dim); border-radius:50%;
+  }
+  .status.live .dot{ background:var(--phosphor); box-shadow:0 0 6px var(--phosphor); animation:blink 1s step-start infinite; }
+  .status.live{ color:var(--phosphor); }
+  @keyframes blink{ 50%{ opacity:0.3; } }
+
+  .log{
+    margin-top:20px;
+  }
+  .log-title{
+    font-family:'Press Start 2P', monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-bottom:10px;
+    letter-spacing:1px;
+  }
+
+  .entry{
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:10px 12px;
+    margin-bottom:8px;
+    font-size:20px;
+  }
+  .entry .code{ color:var(--amber); }
+  .entry .name{ color:var(--phosphor); display:block; margin-top:2px; }
+  .entry .meta{ color:var(--text-dim); font-size:16px; }
+
+  .empty{
+    color:var(--text-dim);
+    font-size:18px;
+    border:1px dashed var(--line);
+    padding:16px;
+    text-align:center;
+  }
+
+  footer{
+    margin-top:24px;
+    text-align:center;
+    color:var(--text-dim);
+    font-size:16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="title">SCANNER</p>
+    <p class="subtitle">apunta la camara a un codigo de barras</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="panel">
+    <div class="viewport" id="viewport">
+      <video id="video" muted playsinline></video>
+      <div class="placeholder" id="placeholder">camara apagada &mdash; presiona INICIAR</div>
+      <div class="scanline" id="scanline" style="display:none;"></div>
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">INICIAR CAMARA</button>
+      <button id="stopBtn" disabled>DETENER</button>
+    </div>
+
+    <div class="status" id="status">
+      <span class="dot"></span>
+      <span id="statusText">en espera</span>
+    </div>
+  </div>
+
+  <div class="log">
+    <p class="log-title">REGISTRO</p>
+    <div id="logList">
+      <div class="empty" id="emptyLog">todavia no escaneaste nada</div>
+    </div>
+  </div>
+
+  <footer>hecho para correr como pagina estatica &middot; GitHub Pages</footer>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script>
+  const video = document.getElementById('video');
+  const viewport = document.getElementById('viewport');
+  const placeholder = document.getElementById('placeholder');
+  const scanline = document.getElementById('scanline');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const statusEl = document.getElementById('status');
+  const statusText = document.getElementById('statusText');
+  const logList = document.getElementById('logList');
+  const emptyLog = document.getElementById('emptyLog');
+
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  const vistos = new Map(); // codigo -> timestamp
+  const ESPERA_REPETIDO_MS = 6000;
+  let activo = false;
+
+  function setStatus(texto, en_vivo){
+    statusText.textContent = texto;
+    statusEl.classList.toggle('live', !!en_vivo);
+  }
+
+  function flashHit(){
+    viewport.classList.add('hit');
+    setTimeout(() => viewport.classList.remove('hit'), 500);
+  }
+
+  async function buscarProducto(codigo){
+    try{
+      const resp = await fetch(`https://world.openfoodfacts.org/api/v2/product/${codigo}.json`);
+      const data = await resp.json();
+      if(data.status === 1 && data.product){
+        const nombre = data.product.product_name || data.product.generic_name || 'sin nombre registrado';
+        const marca = data.product.brands || '';
+        return { nombre, marca, encontrado:true };
+      }
+      return { nombre:'no encontrado en la base de datos', marca:'', encontrado:false };
+    }catch(e){
+      return { nombre:'error al consultar la base de datos', marca:'', encontrado:false };
+    }
+  }
+
+  async function registrarCodigo(codigo, formato){
+    if(emptyLog) emptyLog.remove();
+
+    const entry = document.createElement('div');
+    entry.className = 'entry';
+    entry.innerHTML = `<span class="code">${codigo}</span> <span class="meta">(${formato})</span><span class="name">buscando producto...</span>`;
+    logList.prepend(entry);
+
+    const info = await buscarProducto(codigo);
+    const nombreLinea = entry.querySelector('.name');
+    nombreLinea.textContent = info.marca ? `${info.nombre} — ${info.marca}` : info.nombre;
+    if(!info.encontrado) nombreLinea.style.color = 'var(--text-dim)';
+  }
+
+  async function iniciar(){
+    try{
+      setStatus('activando camara...', false);
+      startBtn.disabled = true;
+
+      await codeReader.decodeFromVideoDevice(undefined, video, (result, err) => {
+        if(result){
+          const codigo = result.getText();
+          const formato = result.getBarcodeFormat ? result.getBarcodeFormat() : '';
+          const ahora = Date.now();
+          const ultima = vistos.get(codigo) || 0;
+
+          flashHit();
+
+          if(ahora - ultima > ESPERA_REPETIDO_MS){
+            vistos.set(codigo, ahora);
+            registrarCodigo(codigo, formato);
+          }
+        }
+      });
+
+      placeholder.style.display = 'none';
+      scanline.style.display = 'block';
+      setStatus('escaneando...', true);
+      stopBtn.disabled = false;
+      activo = true;
+    }catch(e){
+      setStatus('no se pudo acceder a la camara', false);
+      startBtn.disabled = false;
+      console.error(e);
+    }
+  }
+
+  function detener(){
+    codeReader.reset();
+    placeholder.style.display = 'flex';
+    scanline.style.display = 'none';
+    setStatus('en espera', false);
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    activo = false;
+  }
+
+  startBtn.addEventListener('click', iniciar);
+  stopBtn.addEventListener('click', detener);
+</script>
+</body>
+</html>
