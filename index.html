@@ -195,6 +195,50 @@
     color:var(--text-dim);
     font-size:16px;
   }
+
+  .upload-panel{
+    margin-top:20px;
+  }
+
+  .dropzone{
+    border:1px dashed var(--line);
+    background:var(--panel);
+    padding:22px 16px;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color .15s, background .15s;
+    position:relative;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--phosphor-dim);
+    background:#121a13;
+  }
+  .dropzone input{
+    position:absolute; inset:0;
+    opacity:0; cursor:pointer;
+  }
+  .dropzone .hint{
+    color:var(--text-dim);
+    font-size:19px;
+  }
+  .dropzone .hint b{ color:var(--phosphor); font-style:normal; }
+
+  .preview-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top:12px;
+  }
+  .preview-row img{
+    width:64px; height:64px;
+    object-fit:cover;
+    border:1px solid var(--line);
+    filter:grayscale(15%) contrast(1.05);
+  }
+  .preview-row .preview-status{
+    font-size:19px;
+    color:var(--text-dim);
+  }
 </style>
 </head>
 <body>
@@ -229,6 +273,18 @@
     </div>
   </div>
 
+  <div class="upload-panel">
+    <p class="log-title">O SUBI UNA IMAGEN</p>
+    <div class="dropzone" id="dropzone">
+      <span class="hint">arrastra una imagen o <b>toca para elegir</b></span>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+    <div class="preview-row" id="previewRow" style="display:none;">
+      <img id="previewImg" alt="imagen subida">
+      <span class="preview-status" id="previewStatus">analizando imagen...</span>
+    </div>
+  </div>
+
   <div class="log">
     <p class="log-title">REGISTRO</p>
     <div id="logList">
@@ -256,6 +312,12 @@
   const vistos = new Map(); // codigo -> timestamp
   const ESPERA_REPETIDO_MS = 6000;
   let activo = false;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const previewRow = document.getElementById('previewRow');
+  const previewImg = document.getElementById('previewImg');
+  const previewStatus = document.getElementById('previewStatus');
 
   function setStatus(texto, en_vivo){
     statusText.textContent = texto;
@@ -338,6 +400,44 @@
     stopBtn.disabled = true;
     activo = false;
   }
+
+  async function procesarImagen(file){
+    if(!file || !file.type.startsWith('image/')) return;
+
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewRow.style.display = 'flex';
+    previewStatus.textContent = 'analizando imagen...';
+    previewStatus.style.color = 'var(--text-dim)';
+
+    try{
+      const result = await codeReader.decodeFromImageUrl(url);
+      const codigo = result.getText();
+      const formato = result.getBarcodeFormat ? result.getBarcodeFormat() : '';
+      previewStatus.textContent = `codigo detectado: ${codigo}`;
+      previewStatus.style.color = 'var(--phosphor)';
+      vistos.set(codigo, Date.now());
+      registrarCodigo(codigo, formato);
+    }catch(e){
+      previewStatus.textContent = 'no se encontro ningun codigo en la imagen';
+      previewStatus.style.color = 'var(--text-dim)';
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    if(e.target.files[0]) procesarImagen(e.target.files[0]);
+  });
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('drag');
+  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if(e.dataTransfer.files[0]) procesarImagen(e.dataTransfer.files[0]);
+  });
 
   startBtn.addEventListener('click', iniciar);
   stopBtn.addEventListener('click', detener);
