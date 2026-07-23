@@ -3,19 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SCANNER // Lector de codigos</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<title>TICKET // Donde estacione</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #0a0e0b;
-    --panel: #10160f;
-    --line: #1f2b20;
-    --phosphor: #4dff88;
-    --phosphor-dim: #276b45;
-    --amber: #ffb000;
-    --text: #cfe8d6;
-    --text-dim: #6b8f74;
+    --asphalt: #17181a;
+    --concrete: #26282b;
+    --concrete-line: #3d4045;
+    --safety-yellow: #f5b700;
+    --hazard-black: #111214;
+    --paper: #ece4d3;
+    --paper-shadow: #d8cdb4;
+    --stamp-red: #b23a1f;
+    --ink: #2b2620;
+    --ink-dim: #7a7264;
   }
 
   *{ box-sizing:border-box; }
@@ -24,645 +25,413 @@
     margin:0;
     min-height:100vh;
     background:
-      repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px),
-      radial-gradient(ellipse at center, #0d1410 0%, var(--bg) 70%);
-    color:var(--text);
-    font-family:'VT323', monospace;
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(circle at 80% 85%, rgba(255,255,255,0.02), transparent 40%),
+      var(--asphalt);
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(circle at 80% 85%, rgba(255,255,255,0.02), transparent 40%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 6px),
+      var(--asphalt);
+    color:var(--ink);
+    font-family:'Space Mono', monospace;
     display:flex;
     justify-content:center;
-    padding:24px 16px 60px;
+    padding:0 0 60px;
   }
 
-  .wrap{ width:100%; max-width:560px; }
+  .hazard-bar{
+    position:fixed;
+    top:0; left:0; right:0;
+    height:14px;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--safety-yellow) 0px, var(--safety-yellow) 18px,
+      var(--hazard-black) 18px, var(--hazard-black) 36px
+    );
+    z-index:10;
+  }
 
-  header{ text-align:center; margin-bottom:22px; }
+  .wrap{ width:100%; max-width:460px; padding:44px 16px 0; }
 
-  .title{
-    font-family:'Press Start 2P', monospace;
-    font-size:16px;
+  .lot-header{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .lot-label{
+    font-family:'Space Mono', monospace;
+    color:var(--safety-yellow);
+    font-size:13px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    margin:0 0 4px;
+  }
+  .lot-title{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:46px;
     letter-spacing:2px;
-    color:var(--phosphor);
-    text-shadow: 0 0 6px rgba(77,255,136,0.55);
-    margin:0 0 10px;
+    color:#f2ede0;
+    margin:0;
+    line-height:1;
   }
 
-  .subtitle{
-    font-size:20px;
-    color:var(--text-dim);
+  /* ---- TICKET ---- */
+  .ticket{
+    background:var(--paper);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.05);
+    position:relative;
+    padding:0;
+  }
+
+  .ticket-strip{
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--safety-yellow) 0px, var(--safety-yellow) 14px,
+      var(--hazard-black) 14px, var(--hazard-black) 28px
+    );
+    height:10px;
+  }
+
+  .ticket-body{ padding:22px 24px 24px; }
+
+  .ticket-eyebrow{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    border-bottom: 2px dashed var(--paper-shadow);
+    padding-bottom:12px;
+    margin-bottom:16px;
+  }
+  .ticket-eyebrow .lot-no{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:22px;
+    letter-spacing:1px;
+    color:var(--ink);
+  }
+  .ticket-eyebrow .serial{
+    font-size:12px;
+    color:var(--ink-dim);
     letter-spacing:1px;
   }
 
-  .divider{
-    height:1px;
-    background:var(--line);
-    margin:16px 0;
-    position:relative;
-  }
-  .divider::after{
-    content:"";
-    position:absolute; left:0; top:0;
-    height:1px; width:40px;
-    background:var(--phosphor);
-    box-shadow:0 0 6px var(--phosphor);
-  }
-
-  .panel{
-    background:var(--panel);
-    border:1px solid var(--line);
-    padding:14px;
-    position:relative;
-  }
-
-  /* --- Viewport de camara con reticula de escaner (elemento firma) --- */
-  .viewport{
-    position:relative;
+  .park-btn{
     width:100%;
-    aspect-ratio: 4 / 3;
-    background:#000;
-    overflow:hidden;
-    border:1px solid var(--line);
-  }
-
-  video{
-    width:100%; height:100%;
-    object-fit:cover;
-    filter:grayscale(15%) contrast(1.05);
-  }
-
-  .placeholder{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    color:var(--text-dim);
-    font-size:20px;
-    text-align:center;
-    padding:20px;
-  }
-
-  .scanline{
-    position:absolute; left:0; right:0; height:2px;
-    background:linear-gradient(90deg, transparent, var(--phosphor), transparent);
-    box-shadow:0 0 8px 1px var(--phosphor);
-    animation: sweep 2.4s linear infinite;
-    opacity:0.85;
-  }
-  @keyframes sweep{
-    0%{ top:6%; }
-    50%{ top:94%; }
-    100%{ top:6%; }
-  }
-
-  .corner{
-    position:absolute; width:22px; height:22px;
-    border-color: var(--phosphor-dim);
-    border-style:solid;
-    transition: border-color .15s, filter .15s;
-  }
-  .corner.tl{ top:8px; left:8px; border-width:3px 0 0 3px; }
-  .corner.tr{ top:8px; right:8px; border-width:3px 3px 0 0; }
-  .corner.bl{ bottom:8px; left:8px; border-width:0 0 3px 3px; }
-  .corner.br{ bottom:8px; right:8px; border-width:0 3px 3px 0; }
-
-  .viewport.hit .corner{
-    border-color: var(--amber);
-    filter: drop-shadow(0 0 6px var(--amber));
-  }
-
-  .controls{
-    display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
-  }
-
-  button{
-    flex:1;
-    min-width:140px;
-    font-family:'Press Start 2P', monospace;
-    font-size:11px;
-    background:var(--panel);
-    color:var(--phosphor);
-    border:1px solid var(--phosphor-dim);
-    padding:12px 10px;
+    font-family:'Bebas Neue', sans-serif;
+    font-size:22px;
+    letter-spacing:2px;
+    background:var(--hazard-black);
+    color:var(--safety-yellow);
+    border:none;
+    padding:18px 10px;
     cursor:pointer;
-    letter-spacing:1px;
+    transition: transform .08s, background .15s;
   }
-  button:hover{ border-color:var(--phosphor); box-shadow:0 0 8px rgba(77,255,136,0.35); }
-  button:disabled{ color:var(--text-dim); border-color:var(--line); cursor:not-allowed; box-shadow:none; }
+  .park-btn:hover{ background:#000; }
+  .park-btn:active{ transform:scale(0.98); }
+  .park-btn:disabled{ background:#555; color:#999; cursor:not-allowed; }
 
-  .status{
-    margin-top:12px;
-    font-size:20px;
-    color:var(--text-dim);
+  .field-label{
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+    margin:16px 0 6px;
+  }
+
+  textarea, .file-btn{
+    width:100%;
+    background:#fbf8f0;
+    border:1px solid var(--paper-shadow);
+    color:var(--ink);
+    font-family:'Space Mono', monospace;
+    font-size:15px;
+    padding:10px 12px;
+  }
+  textarea{ resize:vertical; min-height:52px; }
+
+  .file-row{ position:relative; }
+  .file-row input[type=file]{
+    position:absolute; inset:0; opacity:0; cursor:pointer;
+  }
+  .file-btn{
     display:flex; align-items:center; gap:8px;
-  }
-  .status .dot{
-    width:9px; height:9px; background:var(--text-dim); border-radius:50%;
-  }
-  .status.live .dot{ background:var(--phosphor); box-shadow:0 0 6px var(--phosphor); animation:blink 1s step-start infinite; }
-  .status.live{ color:var(--phosphor); }
-  @keyframes blink{ 50%{ opacity:0.3; } }
-
-  .log{
-    margin-top:20px;
-  }
-  .log-title{
-    font-family:'Press Start 2P', monospace;
-    font-size:11px;
-    color:var(--text-dim);
-    margin-bottom:10px;
-    letter-spacing:1px;
-  }
-
-  .entry{
-    border:1px solid var(--line);
-    background:var(--panel);
-    padding:10px 12px;
-    margin-bottom:8px;
-    font-size:20px;
-  }
-  .entry .code{ color:var(--amber); }
-  .entry .name{ color:var(--phosphor); display:block; margin-top:2px; }
-  .entry .meta{ color:var(--text-dim); font-size:16px; }
-
-  .empty{
-    color:var(--text-dim);
-    font-size:18px;
-    border:1px dashed var(--line);
-    padding:16px;
-    text-align:center;
-  }
-
-  footer{
-    margin-top:24px;
-    text-align:center;
-    color:var(--text-dim);
-    font-size:16px;
-  }
-
-  .upload-panel{
-    margin-top:20px;
-  }
-
-  .dropzone{
-    border:1px dashed var(--line);
-    background:var(--panel);
-    padding:22px 16px;
-    text-align:center;
+    color:var(--ink-dim);
     cursor:pointer;
-    transition: border-color .15s, background .15s;
+  }
+
+  .status-line{
+    margin-top:14px;
+    font-size:14px;
+    color:var(--ink-dim);
+    min-height:18px;
+  }
+  .status-line.ok{ color:#2f6b3a; }
+  .status-line.err{ color:var(--stamp-red); }
+
+  /* ---- perforation between ticket and stub ---- */
+  .perforation{
+    height:0;
+    border-top: 2px dashed #4a4d52;
     position:relative;
+    margin: 0 0;
   }
-  .dropzone:hover, .dropzone.drag{
-    border-color:var(--phosphor-dim);
-    background:#121a13;
-  }
-  .dropzone input{
-    position:absolute; inset:0;
-    opacity:0; cursor:pointer;
-  }
-  .dropzone .hint{
-    color:var(--text-dim);
-    font-size:19px;
-  }
-  .dropzone .hint b{ color:var(--phosphor); font-style:normal; }
-
-  .preview-row{
-    display:flex;
-    gap:10px;
-    align-items:center;
-    margin-top:12px;
-  }
-  .preview-row img{
-    width:64px; height:64px;
-    object-fit:cover;
-    border:1px solid var(--line);
-    filter:grayscale(15%) contrast(1.05);
-  }
-  .preview-row .preview-status{
-    font-size:19px;
-    color:var(--text-dim);
-  }
-
-  /* --- Boton y panel de VALOR DE OBJETO --- */
-  header{ position:relative; }
-
-  .lens-btn{
+  .perforation::before, .perforation::after{
+    content:"";
     position:absolute;
-    top:0; right:0;
-    width:auto;
-    flex:none;
-    font-size:10px;
-    padding:10px 12px;
-    background:var(--panel);
-    color:var(--amber);
-    border:1px solid #7a5200;
-    display:flex;
-    align-items:center;
-    gap:6px;
+    top:-9px;
+    width:18px; height:18px;
+    background:var(--asphalt);
+    border-radius:50%;
   }
-  .lens-btn:hover{ border-color:var(--amber); box-shadow:0 0 8px rgba(255,176,0,0.35); }
+  .perforation::before{ left:-9px; }
+  .perforation::after{ right:-9px; }
 
-  .lens-panel{
-    display:none;
-    margin-top:18px;
-    border:1px solid #7a5200;
-    background:var(--panel);
-    padding:14px;
-  }
-  .lens-panel.open{ display:block; }
+  /* ---- STUB (saved location) ---- */
+  .stub{ display:none; }
+  .stub.show{ display:block; }
 
-  .lens-panel .log-title{ color:var(--amber); }
-
-  .key-row{
-    display:flex; gap:8px; margin-bottom:12px;
-  }
-  .key-row input{
-    flex:1;
-    background:#0d1410;
-    border:1px solid var(--line);
-    color:var(--text);
-    font-family:'VT323', monospace;
-    font-size:18px;
-    padding:8px 10px;
-  }
-  .key-note{
-    font-size:16px;
-    color:var(--text-dim);
-    margin:-4px 0 12px;
-  }
-
-  .lens-dropzone{
-    border:1px dashed #7a5200;
-    background:#0d1410;
-    padding:20px 16px;
-    text-align:center;
-    cursor:pointer;
+  .stub-body{
+    padding:22px 24px 26px;
     position:relative;
-  }
-  .lens-dropzone:hover{ border-color:var(--amber); }
-  .lens-dropzone input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
-  .lens-dropzone .hint{ color:var(--text-dim); font-size:19px; }
-  .lens-dropzone .hint b{ color:var(--amber); font-style:normal; }
-
-  .lens-preview{
-    margin-top:12px;
-    display:none;
-  }
-  .lens-preview img{
-    width:100%;
-    max-height:220px;
-    object-fit:contain;
-    border:1px solid var(--line);
-    background:#000;
+    overflow:hidden;
   }
 
-  .lens-result{
-    margin-top:12px;
-    border:1px solid var(--line);
-    padding:12px;
-    font-size:19px;
-    display:none;
+  .stamp{
+    position:absolute;
+    top:14px; right:18px;
+    border: 3px solid var(--stamp-red);
+    color:var(--stamp-red);
+    font-family:'Bebas Neue', sans-serif;
+    font-size:20px;
+    letter-spacing:2px;
+    padding:4px 10px;
+    transform: rotate(-9deg);
+    opacity:0.85;
+    border-radius:4px;
   }
-  .lens-result .obj-name{ color:var(--amber); font-size:22px; display:block; margin-bottom:6px; }
-  .lens-result .obj-value{ color:var(--phosphor); }
-  .lens-result .obj-note{ color:var(--text-dim); font-size:17px; display:block; margin-top:6px; }
+
+  .stub-heading{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:24px;
+    letter-spacing:1px;
+    color:var(--ink);
+    margin:0 0 10px;
+    max-width:70%;
+  }
+
+  .coord-block{
+    font-size:20px;
+    letter-spacing:1px;
+    color:var(--ink);
+    background:#fbf8f0;
+    border:1px solid var(--paper-shadow);
+    padding:10px 12px;
+    margin-bottom:10px;
+  }
+
+  .stub-nota{ font-size:15px; color:var(--ink); margin:0 0 6px; }
+  .stub-time{ font-size:13px; color:var(--ink-dim); margin:0 0 14px; }
+
+  .foto-frame{
+    border:1px solid var(--paper-shadow);
+    padding:4px;
+    background:#fbf8f0;
+    margin-bottom:16px;
+  }
+  .foto-frame img{ width:100%; display:block; }
+
+  .stub-actions{ display:flex; gap:10px; }
+  .stub-actions a, .stub-actions button{
+    flex:1;
+    text-align:center;
+    font-family:'Bebas Neue', sans-serif;
+    font-size:15px;
+    letter-spacing:1px;
+    padding:12px 8px;
+    text-decoration:none;
+    cursor:pointer;
+    border:none;
+  }
+  .map-link{ background:var(--hazard-black); color:var(--safety-yellow); }
+  .map-link:hover{ background:#000; }
+  .clear-btn{ background:transparent; color:var(--stamp-red); border:1px solid var(--stamp-red) !important; }
+  .clear-btn:hover{ background:rgba(178,58,31,0.08); }
+
+  .empty-msg{
+    text-align:center;
+    color:#5c5f64;
+    font-size:13px;
+    letter-spacing:1px;
+    padding:20px 10px 0;
+  }
 </style>
 </head>
 <body>
+<div class="hazard-bar"></div>
+
 <div class="wrap">
+  <div class="lot-header">
+    <p class="lot-label">nivel &middot; sector &middot; memoria</p>
+    <p class="lot-title">DONDE ESTACIONE</p>
+  </div>
 
-  <header>
-    <button class="lens-btn" id="lensBtn">&#128269; VALOR OBJETO</button>
-    <p class="title">SCANNER</p>
-    <p class="subtitle">apunta la camara a un codigo de barras</p>
-  </header>
+  <div class="ticket">
+    <div class="ticket-strip"></div>
+    <div class="ticket-body">
+      <div class="ticket-eyebrow">
+        <span class="lot-no">TICKET</span>
+        <span class="serial" id="serialNo">SER. ----</span>
+      </div>
 
-  <div class="lens-panel" id="lensPanel">
-    <p class="log-title">VALOR DE OBJETO (estilo Google Lens)</p>
+      <button class="park-btn" id="saveBtn">MARCAR ESTE LUGAR</button>
 
-    <div class="key-row">
-      <input type="password" id="apiKeyInput" placeholder="pega tu API key de Anthropic">
-      <button id="saveKeyBtn" style="flex:none; min-width:auto; padding:8px 14px;">GUARDAR</button>
+      <p class="field-label">Nota (piso, letra, referencia)</p>
+      <textarea id="notaInput" placeholder="ej. nivel 3, columna C-14, cerca del ascensor"></textarea>
+
+      <p class="field-label">Foto del lugar (opcional)</p>
+      <div class="file-row">
+        <div class="file-btn">&#128247; subir o tomar foto</div>
+        <input type="file" id="fotoInput" accept="image/*" capture="environment">
+      </div>
+
+      <p class="status-line" id="status"></p>
     </div>
-    <p class="key-note">tu key se guarda solo en tu navegador (localStorage), nunca se sube al repo. sacala en console.anthropic.com</p>
 
-    <div class="lens-dropzone" id="lensDropzone">
-      <span class="hint">saca una foto o <b>subi una imagen del objeto</b></span>
-      <input type="file" id="lensFileInput" accept="image/*" capture="environment">
-    </div>
+    <div class="perforation"></div>
 
-    <div class="lens-preview" id="lensPreview">
-      <img id="lensPreviewImg" alt="objeto a tasar">
-    </div>
-
-    <div class="lens-result" id="lensResult">
-      <span class="obj-name" id="objName"></span>
-      <span class="obj-value" id="objValue"></span>
-      <span class="obj-note" id="objNote"></span>
+    <div class="stub" id="stub">
+      <div class="stub-body">
+        <span class="stamp">PARKED</span>
+        <p class="stub-heading">Tu ultimo lugar</p>
+        <p class="coord-block" id="coordsText">--</p>
+        <p class="stub-nota" id="notaText"></p>
+        <p class="stub-time" id="timeText"></p>
+        <div class="foto-frame" id="fotoFrame" style="display:none;">
+          <img id="fotoPreview" alt="foto del lugar">
+        </div>
+        <div class="stub-actions">
+          <a class="map-link" id="mapLink" href="#" target="_blank">ABRIR MAPA</a>
+          <button class="clear-btn" id="clearBtn">BORRAR</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="divider"></div>
-
-  <div class="panel">
-    <div class="viewport" id="viewport">
-      <video id="video" muted playsinline></video>
-      <div class="placeholder" id="placeholder">camara apagada &mdash; presiona INICIAR</div>
-      <div class="scanline" id="scanline" style="display:none;"></div>
-      <div class="corner tl"></div>
-      <div class="corner tr"></div>
-      <div class="corner bl"></div>
-      <div class="corner br"></div>
-    </div>
-
-    <div class="controls">
-      <button id="startBtn">INICIAR CAMARA</button>
-      <button id="stopBtn" disabled>DETENER</button>
-    </div>
-
-    <div class="status" id="status">
-      <span class="dot"></span>
-      <span id="statusText">en espera</span>
-    </div>
-  </div>
-
-  <div class="upload-panel">
-    <p class="log-title">O SUBI UNA IMAGEN</p>
-    <div class="dropzone" id="dropzone">
-      <span class="hint">arrastra una imagen o <b>toca para elegir</b></span>
-      <input type="file" id="fileInput" accept="image/*">
-    </div>
-    <div class="preview-row" id="previewRow" style="display:none;">
-      <img id="previewImg" alt="imagen subida">
-      <span class="preview-status" id="previewStatus">analizando imagen...</span>
-    </div>
-  </div>
-
-  <div class="log">
-    <p class="log-title">REGISTRO</p>
-    <div id="logList">
-      <div class="empty" id="emptyLog">todavia no escaneaste nada</div>
-    </div>
-  </div>
-
-  <footer>hecho para correr como pagina estatica &middot; GitHub Pages</footer>
+  <p class="empty-msg" id="emptyMsg">sin ticket activo &middot; marca tu lugar para empezar</p>
 </div>
 
-<script src="https://unpkg.com/@zxing/library@latest"></script>
 <script>
-  const video = document.getElementById('video');
-  const viewport = document.getElementById('viewport');
-  const placeholder = document.getElementById('placeholder');
-  const scanline = document.getElementById('scanline');
-  const startBtn = document.getElementById('startBtn');
-  const stopBtn = document.getElementById('stopBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const notaInput = document.getElementById('notaInput');
+  const fotoInput = document.getElementById('fotoInput');
   const statusEl = document.getElementById('status');
-  const statusText = document.getElementById('statusText');
-  const logList = document.getElementById('logList');
-  const emptyLog = document.getElementById('emptyLog');
+  const stub = document.getElementById('stub');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const coordsText = document.getElementById('coordsText');
+  const notaText = document.getElementById('notaText');
+  const timeText = document.getElementById('timeText');
+  const fotoFrame = document.getElementById('fotoFrame');
+  const fotoPreview = document.getElementById('fotoPreview');
+  const mapLink = document.getElementById('mapLink');
+  const clearBtn = document.getElementById('clearBtn');
+  const serialNo = document.getElementById('serialNo');
 
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  const vistos = new Map(); // codigo -> timestamp
-  const ESPERA_REPETIDO_MS = 6000;
-  let activo = false;
+  const STORAGE_KEY = 'dondeEstacione_datos';
 
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
-  const previewRow = document.getElementById('previewRow');
-  const previewImg = document.getElementById('previewImg');
-  const previewStatus = document.getElementById('previewStatus');
-
-  function setStatus(texto, en_vivo){
-    statusText.textContent = texto;
-    statusEl.classList.toggle('live', !!en_vivo);
+  function setStatus(msg, tipo){
+    statusEl.textContent = msg;
+    statusEl.className = 'status-line' + (tipo ? ' ' + tipo : '');
   }
-
-  function flashHit(){
-    viewport.classList.add('hit');
-    setTimeout(() => viewport.classList.remove('hit'), 500);
-  }
-
-  async function buscarProducto(codigo){
-    try{
-      const resp = await fetch(`https://world.openfoodfacts.org/api/v2/product/${codigo}.json`);
-      const data = await resp.json();
-      if(data.status === 1 && data.product){
-        const nombre = data.product.product_name || data.product.generic_name || 'sin nombre registrado';
-        const marca = data.product.brands || '';
-        return { nombre, marca, encontrado:true };
-      }
-      return { nombre:'no encontrado en la base de datos', marca:'', encontrado:false };
-    }catch(e){
-      return { nombre:'error al consultar la base de datos', marca:'', encontrado:false };
-    }
-  }
-
-  async function registrarCodigo(codigo, formato){
-    if(emptyLog) emptyLog.remove();
-
-    const entry = document.createElement('div');
-    entry.className = 'entry';
-    entry.innerHTML = `<span class="code">${codigo}</span> <span class="meta">(${formato})</span><span class="name">buscando producto...</span>`;
-    logList.prepend(entry);
-
-    const info = await buscarProducto(codigo);
-    const nombreLinea = entry.querySelector('.name');
-    nombreLinea.textContent = info.marca ? `${info.nombre} — ${info.marca}` : info.nombre;
-    if(!info.encontrado) nombreLinea.style.color = 'var(--text-dim)';
-  }
-
-  async function iniciar(){
-    try{
-      setStatus('activando camara...', false);
-      startBtn.disabled = true;
-
-      await codeReader.decodeFromVideoDevice(undefined, video, (result, err) => {
-        if(result){
-          const codigo = result.getText();
-          const formato = result.getBarcodeFormat ? result.getBarcodeFormat() : '';
-          const ahora = Date.now();
-          const ultima = vistos.get(codigo) || 0;
-
-          flashHit();
-
-          if(ahora - ultima > ESPERA_REPETIDO_MS){
-            vistos.set(codigo, ahora);
-            registrarCodigo(codigo, formato);
-          }
-        }
-      });
-
-      placeholder.style.display = 'none';
-      scanline.style.display = 'block';
-      setStatus('escaneando...', true);
-      stopBtn.disabled = false;
-      activo = true;
-    }catch(e){
-      setStatus('no se pudo acceder a la camara', false);
-      startBtn.disabled = false;
-      console.error(e);
-    }
-  }
-
-  function detener(){
-    codeReader.reset();
-    placeholder.style.display = 'flex';
-    scanline.style.display = 'none';
-    setStatus('en espera', false);
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-    activo = false;
-  }
-
-  async function procesarImagen(file){
-    if(!file || !file.type.startsWith('image/')) return;
-
-    const url = URL.createObjectURL(file);
-    previewImg.src = url;
-    previewRow.style.display = 'flex';
-    previewStatus.textContent = 'analizando imagen...';
-    previewStatus.style.color = 'var(--text-dim)';
-
-    try{
-      const result = await codeReader.decodeFromImageUrl(url);
-      const codigo = result.getText();
-      const formato = result.getBarcodeFormat ? result.getBarcodeFormat() : '';
-      previewStatus.textContent = `codigo detectado: ${codigo}`;
-      previewStatus.style.color = 'var(--phosphor)';
-      vistos.set(codigo, Date.now());
-      registrarCodigo(codigo, formato);
-    }catch(e){
-      previewStatus.textContent = 'no se encontro ningun codigo en la imagen';
-      previewStatus.style.color = 'var(--text-dim)';
-    }
-  }
-
-  fileInput.addEventListener('change', (e) => {
-    if(e.target.files[0]) procesarImagen(e.target.files[0]);
-  });
-
-  dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzone.classList.add('drag');
-  });
-  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
-  dropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropzone.classList.remove('drag');
-    if(e.dataTransfer.files[0]) procesarImagen(e.dataTransfer.files[0]);
-  });
-
-  startBtn.addEventListener('click', iniciar);
-  stopBtn.addEventListener('click', detener);
-
-  // ---------- VALOR DE OBJETO (Claude vision) ----------
-  const lensBtn = document.getElementById('lensBtn');
-  const lensPanel = document.getElementById('lensPanel');
-  const apiKeyInput = document.getElementById('apiKeyInput');
-  const saveKeyBtn = document.getElementById('saveKeyBtn');
-  const lensDropzone = document.getElementById('lensDropzone');
-  const lensFileInput = document.getElementById('lensFileInput');
-  const lensPreview = document.getElementById('lensPreview');
-  const lensPreviewImg = document.getElementById('lensPreviewImg');
-  const lensResult = document.getElementById('lensResult');
-  const objName = document.getElementById('objName');
-  const objValue = document.getElementById('objValue');
-  const objNote = document.getElementById('objNote');
-
-  const KEY_STORAGE = 'valorObjeto_apiKey';
-  apiKeyInput.value = localStorage.getItem(KEY_STORAGE) || '';
-
-  lensBtn.addEventListener('click', () => {
-    lensPanel.classList.toggle('open');
-  });
-
-  saveKeyBtn.addEventListener('click', () => {
-    localStorage.setItem(KEY_STORAGE, apiKeyInput.value.trim());
-    objNote.textContent = '';
-    objName.textContent = 'key guardada';
-    objValue.textContent = '';
-    lensResult.style.display = 'block';
-  });
 
   function fileToBase64(file){
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   }
 
-  async function tasarObjeto(file){
-    const apiKey = localStorage.getItem(KEY_STORAGE);
-    if(!apiKey){
-      alert('Primero pega y guarda tu API key de Anthropic arriba.');
-      return;
-    }
+  function generarSerial(timestamp){
+    return String(timestamp).slice(-6);
+  }
 
-    const url = URL.createObjectURL(file);
-    lensPreviewImg.src = url;
-    lensPreview.style.display = 'block';
+  function mostrarGuardado(datos){
+    emptyMsg.style.display = 'none';
+    stub.classList.add('show');
 
-    lensResult.style.display = 'block';
-    objName.textContent = 'analizando objeto...';
-    objValue.textContent = '';
-    objNote.textContent = '';
+    serialNo.textContent = `SER. ${generarSerial(datos.timestamp)}`;
+    coordsText.textContent = `${datos.lat.toFixed(6)}, ${datos.lng.toFixed(6)}`;
+    notaText.textContent = datos.nota ? datos.nota : '';
+    notaText.style.display = datos.nota ? 'block' : 'none';
+    timeText.textContent = `marcado: ${new Date(datos.timestamp).toLocaleString('es-ES')}`;
+    mapLink.href = `https://www.google.com/maps?q=${datos.lat},${datos.lng}`;
 
-    try{
-      const base64Data = await fileToBase64(file);
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-5',
-          max_tokens: 500,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: file.type, data: base64Data } },
-              { type: 'text', text: 'Identifica el objeto principal de esta foto. Devolveme SOLO un JSON, sin texto extra, sin backticks, con este formato exacto: {"nombre": "...", "valor_estimado_usd": "rango o numero, ej. 50-80", "precio_reventa_usd": "rango o numero", "nota": "condicion / factores que afectan el precio, una frase corta"}' }
-            ]
-          }]
-        })
-      });
-
-      if(!response.ok){
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || `error HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      const textoRespuesta = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
-      const limpio = textoRespuesta.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(limpio);
-
-      objName.textContent = parsed.nombre || 'objeto no identificado';
-      objValue.textContent = `valor: $${parsed.valor_estimado_usd} · reventa: $${parsed.precio_reventa_usd}`;
-      objNote.textContent = parsed.nota || '';
-    }catch(e){
-      objName.textContent = 'no se pudo tasar el objeto';
-      objValue.textContent = '';
-      objNote.textContent = e.message || 'revisa tu API key o intenta con otra foto';
-      console.error(e);
+    if(datos.foto){
+      fotoPreview.src = datos.foto;
+      fotoFrame.style.display = 'block';
+    }else{
+      fotoFrame.style.display = 'none';
     }
   }
 
-  lensFileInput.addEventListener('change', (e) => {
-    if(e.target.files[0]) tasarObjeto(e.target.files[0]);
+  function cargarGuardado(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      try{ mostrarGuardado(JSON.parse(raw)); }
+      catch(e){ /* datos corruptos, ignorar */ }
+    }
+  }
+
+  saveBtn.addEventListener('click', () => {
+    if(!navigator.geolocation){
+      setStatus('tu navegador no soporta geolocalizacion', 'err');
+      return;
+    }
+
+    saveBtn.disabled = true;
+    setStatus('obteniendo ubicacion...', '');
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const datos = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        nota: notaInput.value.trim(),
+        timestamp: Date.now(),
+        foto: null
+      };
+
+      const file = fotoInput.files[0];
+      if(file){
+        try{ datos.foto = await fileToBase64(file); }
+        catch(e){ /* si falla la foto, seguimos sin ella */ }
+      }
+
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
+        mostrarGuardado(datos);
+        setStatus('ticket emitido correctamente', 'ok');
+      }catch(e){
+        setStatus('no se pudo guardar (la foto puede ser muy pesada)', 'err');
+      }
+
+      saveBtn.disabled = false;
+    }, (err) => {
+      setStatus('no se pudo obtener la ubicacion: ' + err.message, 'err');
+      saveBtn.disabled = false;
+    }, { enableHighAccuracy:true, timeout:10000 });
   });
 
-  lensDropzone.addEventListener('dragover', (e) => { e.preventDefault(); lensDropzone.style.borderColor = 'var(--amber)'; });
-  lensDropzone.addEventListener('dragleave', () => lensDropzone.style.borderColor = '#7a5200');
-  lensDropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    lensDropzone.style.borderColor = '#7a5200';
-    if(e.dataTransfer.files[0]) tasarObjeto(e.dataTransfer.files[0]);
+  clearBtn.addEventListener('click', () => {
+    localStorage.removeItem(STORAGE_KEY);
+    stub.classList.remove('show');
+    emptyMsg.style.display = 'block';
+    notaInput.value = '';
+    fotoInput.value = '';
+    setStatus('');
   });
 
+  cargarGuardado();
 </script>
 </body>
 </html>
