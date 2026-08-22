@@ -2,13 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const gamesContainer = document.getElementById('gamesContainer');
     const searchInput = document.getElementById('searchInput');
 
-    // CAMBIO: Ya no hay juegos. Ahora hay "Elementos del Archivo"
+    // --- LISTA DE ELEMENTOS NEUTROS (SIN JUEGOS) ---
     const items = [
         {
             title: "Manual de Utilidad",
             description: "Guía completa para el uso de herramientas básicas.",
             icon: "📄",
-            link: "#"
+            link: "#" // Enlace vacío
         },
         {
             title: "Calendario 2026",
@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
+    // --- FUNCIÓN PARA MOSTRAR LOS ELEMENTOS NEUTROS ---
     function renderItems(filterText = '') {
         gamesContainer.innerHTML = '';
         
@@ -57,21 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filteredItems.forEach(item => {
             const card = document.createElement('div');
-            card.className = 'game-card';
+            card.className = 'game-card'; // Se mantiene la clase para el estilo CSS
             card.innerHTML = `
                 <div style="font-size: 3rem; margin-bottom: 10px;">${item.icon}</div>
                 <h3>${item.title}</h3>
                 <p>${item.description}</p>
             `;
-            // El enlace es vacío (#) para que no salga nada al hacer click
-            // O puedes ponerlo vacío para que no abra nada
             gamesContainer.appendChild(card);
         });
     }
 
+    // --- EVENTO DE BÚSQUEDA ---
     searchInput.addEventListener('input', (e) => {
         renderItems(e.target.value);
     });
 
+    // --- CARGA INICIAL DE LA PÁGINA ---
     renderItems();
 });
