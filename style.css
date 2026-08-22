@@ -11,12 +11,19 @@ header {
     background-color: #1e1e1e;
     padding: 1rem 2rem;
     text-align: center;
-    border-bottom: 2px solid #3498db;
+    border-bottom: 2px solid #444;
 }
 
 header h1 {
     margin: 0;
-    color: #3498db;
+    color: #ccc;
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+}
+
+header p {
+    color: #888;
+    margin-top: 5px;
 }
 
 .search-section {
@@ -33,6 +40,11 @@ header h1 {
     border: 1px solid #444;
     background-color: #2c2c2c;
     color: #e0e0e0;
+    outline: none;
+}
+
+#searchInput:focus {
+    border-color: #666;
 }
 
 .games-grid {
@@ -50,34 +62,37 @@ header h1 {
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
 }
 
 .game-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-}
-
-.game-card img {
-    max-width: 100%;
-    height: auto;
-    display: block;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border-color: #666;
 }
 
 .game-card h3 {
     margin: 0.5rem 0;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    color: #fff;
 }
 
 .game-card p {
     margin: 0.5rem;
     font-size: 0.9rem;
-    color: #b0b0b0;
+    color: #aaa;
+    padding: 0 1rem;
 }
 
 footer {
     text-align: center;
     padding: 1rem;
     background-color: #1e1e1e;
-    border-top: 2px solid #3498db;
+    border-top: 2px solid #444;
     margin-top: 2rem;
+    color: #666;
 }
