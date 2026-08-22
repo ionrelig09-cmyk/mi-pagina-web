@@ -2,47 +2,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const gamesContainer = document.getElementById('gamesContainer');
     const searchInput = document.getElementById('searchInput');
 
-    // --- LISTA DE ELEMENTOS NEUTROS (SIN JUEGOS) ---
+    // ESTO ES LO NUEVO: Lista vacía o items neutros. Sin juegos.
     const items = [
         {
-            title: "Manual de Utilidad",
-            description: "Guía completa para el uso de herramientas básicas.",
-            icon: "📄",
-            link: "#" // Enlace vacío
+            title: "Archivo 1",
+            description: "Documento de referencia general.",
+            icon: "📁"
         },
         {
-            title: "Calendario 2026",
-            description: "Planificador anual de tareas y fechas importantes.",
-            icon: "📅",
-            link: "#"
+            title: "Archivo 2",
+            description: "Herramienta de cálculo básico.",
+            icon: "🧮"
         },
         {
-            title: "Calculadora Avanzada",
-            description: "Herramienta matemática para ejercicios prácticos.",
-            icon: "🧮",
-            link: "#"
+            title: "Archivo 3",
+            description: "Guía de usuario e instrucciones.",
+            icon: "📖"
         },
         {
-            title: "Biblioteca de Texto",
-            description: "Recopilación de textos de referencia rápida.",
-            icon: "📚",
-            link: "#"
-        },
-        {
-            title: "Notas Rápidas",
-            description: "Aplicación de toma de notas instantáneas.",
-            icon: "📝",
-            link: "#"
-        },
-        {
-            title: "Reloj Global",
-            description: "Horarios y zonas horarias de todo el mundo.",
-            icon: "🌍",
-            link: "#"
+            title: "Archivo 4",
+            description: "Plantilla de notas rápidas.",
+            icon: "📝"
         }
     ];
 
-    // --- FUNCIÓN PARA MOSTRAR LOS ELEMENTOS NEUTROS ---
     function renderItems(filterText = '') {
         gamesContainer.innerHTML = '';
         
@@ -52,15 +35,15 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         if (filteredItems.length === 0) {
-            gamesContainer.innerHTML = '<p style="text-align:center; color:#666; grid-column: 1/-1;">No se encontraron resultados.</p>';
+            gamesContainer.innerHTML = '<p style="text-align:center; color:#666; grid-column: 1/-1;">No hay resultados.</p>';
             return;
         }
 
         filteredItems.forEach(item => {
             const card = document.createElement('div');
-            card.className = 'game-card'; // Se mantiene la clase para el estilo CSS
+            card.className = 'game-card';
             card.innerHTML = `
-                <div style="font-size: 3rem; margin-bottom: 10px;">${item.icon}</div>
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">${item.icon}</div>
                 <h3>${item.title}</h3>
                 <p>${item.description}</p>
             `;
@@ -68,11 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- EVENTO DE BÚSQUEDA ---
     searchInput.addEventListener('input', (e) => {
         renderItems(e.target.value);
     });
 
-    // --- CARGA INICIAL DE LA PÁGINA ---
     renderItems();
 });
