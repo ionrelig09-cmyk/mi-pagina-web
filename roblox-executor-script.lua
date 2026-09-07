@@ -1,35 +1,195 @@
-local function loadScript()
+-- Script de administración para executor (Delta, Synapse, etc.)
+-- Configuración
+local PREFIX = "." -- Prefijo para los comandos
+local ADMIN_NAME = "jrblacjr" -- Tu nombre de usuario de Roblox
+
+-- Cargar automáticamente el script adicional
+local function loadAdditionalScript()
     local success, script = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/ionrelig09-cmyk/roblox-executor-script/main/roblox-executor-script.lua")
+        return game:HttpGet("https://rawscripts.net/raw/Universal-Script-SystemBroken-New-2026-85435")
     end)
     
     if success then
         local loaded, error = loadstring(script)
         if loaded then
             local result, err = pcall(loaded)
-            if result then
-                game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                    Text = "[ADMIN] Script cargado correctamente.";
-                    Color = Color3.new(0, 1, 0);
-                })
-            else
-                game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                    Text = "[ADMIN] Error al ejecutar el script: " .. tostring(err);
-                    Color = Color3.new(1, 0, 0);
-                })
+            if not result then
+                warn("[ADMIN] Error al ejecutar el script adicional: " .. tostring(err))
             end
         else
-            game.StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[ADMIN] Error al compilar el script: " .. tostring(error);
-                Color = Color3.new(1, 0, 0);
-            })
+            warn("[ADMIN] Error al compilar el script adicional: " .. tostring(error))
         end
     else
-        game.StarterGui:SetCore("ChatMakeSystemMessage", {
-            Text = "[ADMIN] Error al cargar el script: " .. tostring(script);
-            Color = Color3.new(1, 0, 0);
-        })
+        warn("[ADMIN] Error al cargar el script adicional: " .. tostring(script))
     end
 end
 
-loadScript()
+-- Cargar el script adicional al iniciar
+loadAdditionalScript()
+
+-- Comandos disponibles
+local commands = {}
+
+-- Comando para lanzar (fling) a un jugador aleatorio
+commands["fling"] = function(args)
+    local players = game.Players:GetPlayers()
+    local targetPlayer
+    
+    if args[1] and args[1]:lower() == "random" then
+        -- Seleccionar un jugador aleatorio (excepto el administrador)
+        local availablePlayers = {}
+        for _, p in ipairs(players) do
+            if p.Name ~= ADMIN_NAME then
+                table.insert(availablePlayers, p)
+            end
+        end
+        
+        if #availablePlayers > 0 then
+            targetPlayer = availablePlayers[math.random(#availablePlayers)]
+        else
+            game.StarterGui:SetCore("ChatMakeSystemMessage", {
+                Text = "[ADMIN] No hay otros jugadores disponibles para lanzar.";
+                Color = Color3.new(1, 0, 0);
+            })
+            return
+        end
+    else
+        -- Buscar jugador por nombre
+        local targetName = table.concat(args, " ")
+        for _, p in ipairs(players) do
+            if p.Name:lower():sub(1, #targetName) == targetName:lower() then
+                targetPlayer = p
+                break
+            end
+        end
+        
+        if not targetPlayer then
+            game.StarterGui:SetCore("ChatMakeSystemMessage", {
+                Text = "[ADMIN] Jugador no encontrado: " .. targetName;
+                Color = Color3.new(1, 0, 0);
+            })
+            return
+        end
+    end
+    
+    -- Aplicar el efecto de fling al jugador objetivo
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+        local humanoid = targetPlayer.Character.Humanoid
+        local rootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        if rootPart then
+            -- Aplicar una fuerza extrema para lanzar al jugador
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Velocity = Vector3.new(math.random(-5000, 5000), 10000, math.random(-5000, 5000))
+            bodyVelocity.P = 5000
+            bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyVelocity.Parent = rootPart
+            
+            -- Eliminar la fuerza después de un corto tiempo
+            game:GetService("Debris"):AddItem(bodyVelocity, 0.1)
+            
+            -- Notificar al administrador
+            game.StarterGui:SetCore("ChatMakeSystemMessage", {
+                Text = "[ADMIN] Jugador lanzado: " .. targetPlayer.Name;
+                Color = Color3.new(0, 1, 0);
+            })
+        end
+    end
+end
+
+-- Comando para teletransportarse a un jugador
+commands["tp"] = function(args)
+    local targetName = table.concat(args, " ")
+    local player = game.Players.LocalPlayer
+    
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #targetName) == targetName:lower() then
+            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
+                game.StarterGui:SetCore("ChatMakeSystemMessage", {
+                    Text = "[ADMIN] Teletransportado a: " .. p.Name;
+                    Color = Color3.new(0, 1, 0);
+                })
+                return
+            end
+        end
+    end
+    
+    game.StarterGui:SetCore("ChatMakeSystemMessage", {
+        Text = "[ADMIN] Jugador no encontrado: " .. targetName;
+        Color = Color3.new(1, 0, 0);
+    })
+end
+
+-- Comando para obtener herramientas
+commands["tools"] = function()
+    local player = game.Players.LocalPlayer
+    local backpack = player:FindFirstChild("Backpack")
+    
+    if not backpack then return end
+    
+    -- Herramientas comunes en muchos juegos
+    local toolNames = {"Sword", "Gun", "Tool", "Knife", "Bomb"}
+    
+    for _, toolName in ipairs(toolNames) do
+        local tool = Instance.new("Tool")
+        tool.Name = toolName
+        
+        -- Crear una parte para la herramienta
+        local handle = Instance.new("Part")
+        handle.Name = "Handle"
+        handle.Size = Vector3.new(1, 1, 1)
+        handle.Parent = tool
+        
+        -- Crear un mesh para que se vea mejor
+        local mesh = Instance.new("Mesh")
+        mesh.MeshType = Enum.MeshType.Sword
+        mesh.Scale = Vector3.new(1, 1, 1)
+        mesh.Parent = handle
+        
+        tool.Parent = backpack
+    end
+    
+    game.StarterGui:SetCore("ChatMakeSystemMessage", {
+        Text = "[ADMIN] Herramientas añadidas al inventario";
+        Color = Color3.new(0, 1, 0);
+    })
+end
+
+-- Función para procesar los comandos
+local function processCommand(message)
+    -- Verificar si el mensaje comienza con el prefijo
+    if message:sub(1, #PREFIX) == PREFIX then
+        -- Verificar si es el administrador
+        if game.Players.LocalPlayer.Name ~= ADMIN_NAME then
+            return
+        end
+        
+        -- Extraer el comando y los argumentos
+        local cmd = message:sub(#PREFIX + 1)
+        local args = {}
+        for arg in cmd:gmatch("%S+") do
+            table.insert(args, arg)
+        end
+        
+        local commandName = table.remove(args, 1)
+        
+        -- Ejecutar el comando si existe
+        if commands[commandName] then
+            commands[commandName](args)
+        end
+    end
+end
+
+-- Conectar el evento de chat
+game.Players.LocalPlayer.Chatted:Connect(processCommand)
+
+-- Notificación de que el script se ha cargado
+game.StarterGui:SetCore("ChatMakeSystemMessage", {
+    Text = "[ADMIN] Script de administración cargado. Usa " .. PREFIX .. "help para ver los comandos.";
+    Color = Color3.new(0, 1, 0);
+})
